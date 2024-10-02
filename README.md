@@ -1,2 +1,0 @@
-# gruppe fire prosjekt
- 
