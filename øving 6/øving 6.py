@@ -20,4 +20,13 @@ def trykk_templogg():
             barometer_trykk.append(float(parts[2]))
             absolutt_trykk.append(float(parts[3]))
             tempuratur.append(float(parts[4]))
-    return barometer_trykk, absolutt_trykk, tempuratur
+        else:
+            tid_i_sekunder.append(None)
+            barometer_trykk.append(None)
+            absolutt_trykk.append(None)
+            tempuratur.append(None)
+            
+    return tid_i_sekunder, barometer_trykk, absolutt_trykk, tempuratur
+
+tid, barometer, asolutt, temp = trykk_templogg()
+print(tid)
