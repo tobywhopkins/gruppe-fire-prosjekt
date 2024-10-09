@@ -1,0 +1,30 @@
+fila = open('trykk_og_temperaturlogg_rune_time.csv.txt', 'r')
+innhold = fila.readlines()
+tid_i_sekunder = []
+trykk = []
+absolutt_trykk = []
+temperatur = []
+
+
+def trykk_templogg():
+    for line in innhold:
+        try:
+            line = line.replace(',', '.')
+            deler = line.strip().split(';')
+            if len(deler) >= 5:
+                tid_i_sekunder.append(float(deler[1]))
+                trykk.append(float(deler[2]))
+                absolutt_trykk.append(float(deler[3]))
+                temperatur.append(float(deler[4]))
+            else:
+                tid_i_sekunder.append(None)
+                trykk.append(None)
+                absolutt_trykk.append(None)
+                temperatur.append(None)
+        except ValueError:
+            continue
+    return tid_i_sekunder, trykk, absolutt_trykk, temperatur
+
+
+trykk_templogg()
+print(tid_i_sekunder)
