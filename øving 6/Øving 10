@@ -1,1 +1,66 @@
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
+import numpy as np
 
+def les_data(filnavn):
+    tid, temperatur, trykk = [], [], []
+    with open(filnavn, 'r') as fila:
+        for line in fila.readlines()[1:]:
+            line = line.replace(',', '.').strip().split(';')
+            if len(line) >= 5:
+                try:
+                    tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
+                    temperatur.append(float(line[3]))
+                    trykk.append(float(line[4]))
+                except ValueError:
+                    continue
+    return tid, temperatur, trykk
+
+def moving_average(data, n):
+    return np.convolve(data, np.ones((n,))/n, mode='valid')
+
+tid_i_sekunder, trykk, absolutt_trykk, temperatur = [], [], [], []
+with open('trykk_og_temperaturlogg_rune_time.csv.txt', 'r') as fila:
+    for line in fila:
+        line = line.replace(',', '.')
+        deler = line.strip().split(';')
+        if len(deler) >= 5 and all(deler[1:5]):
+            try:
+                tid_i_sekunder.append(float(deler[1]))
+                trykk.append(float(deler[2]) * 10)
+                absolutt_trykk.append(float(deler[3]) * 10)
+                temperatur.append(float(deler[4]))
+            except ValueError:
+                continue
+
+start_tid = datetime(2021, 6, 11, 14, 23)
+tid_datetime = [start_tid + timedelta(seconds=t) for t in tid_i_sekunder]
+
+dato_tid, temperatur2, trykk2 = les_data('temperatur_trykk_met_samme_rune_time_datasett.csv.txt')
+
+gjennomsnittstemperatur = moving_average(temperatur, 30)
+
+plt.figure(figsize=(12, 8))
+
+plt.subplot(2, 1, 1)
+plt.plot(tid_datetime, temperatur, label="Temperatur (°C) fra Fil 1", color='blue')
+plt.plot(tid_datetime[29:], gjennomsnittstemperatur, label="Gjennomsnittstemperatur (°C)", color='orange')
+plt.plot(dato_tid, temperatur2, label="Temperatur (°C) fra Fil 2", color='green')
+plt.title("Temperatur over Tid")
+plt.xlabel("Tid")
+plt.ylabel("Temperatur (°C)")
+plt.grid(True)
+plt.legend()
+
+plt.subplot(2, 1, 2)
+plt.plot(tid_datetime, trykk, label="Trykk (hPa) fra Fil 1", color='orange')
+plt.plot(tid_datetime, absolutt_trykk, label="Absolutt Trykk (hPa)", color='blue')
+plt.plot(dato_tid, trykk2, label="Lufttrykk (hPa) fra Fil 2", color='green')
+plt.title("Trykk over Tid")
+plt.xlabel("Tid")
+plt.ylabel("Trykk (hPa)")
+plt.grid(True)
+plt.legend()
+
+plt.tight_layout()
+plt.show()
