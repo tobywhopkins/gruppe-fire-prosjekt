@@ -1,82 +1,37 @@
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-sinnes_data = []
-sauda_data = []
+sinnes_data, sauda_data = [], []
 
-# Reading data from Sinnes file
+# Les data fra Sinnes-fil, hopp over header-linjen
 with open('sinnes_data.csv', 'r') as sinnes_fila:
+    next(sinnes_fila)  # Hopper over headeren
     for line in sinnes_fila:
-        line_1 = line.replace(',', '.')
-        deler_1 = line.strip().split(';')
-        if len(deler_1) > 5 and all(deler_1[1:5]):
-            tid_1 = deler_1[2]
-            temperatur_1 = deler_1[3]
-            lufttrykk_1 = deler_1[4]
-            sinnes_data.append((tid_1, temperatur_1, lufttrykk_1))
+        deler = line.replace(',', '.').strip().split(';')
+        if len(deler) > 4:
+            sinnes_data.append((deler[2], float(deler[3])))
 
-# Reading data from Sauda file
+# Les data fra Sauda-fil, hopp over header-linjen
 with open('sauda_data.csv', 'r') as sauda_fila:
+    next(sauda_fila)  # Hopper over headeren
     for line in sauda_fila:
-        line_2 = line.replace(',', '.')
-        deler_2 = line.strip().split(';')
-        if len(deler_2) > 5 and all(deler_2[1:5]):
-            tid_2 = deler_2[2]
-            temperatur_2 = deler_2[3]  # Corrected here
-            lufttrykk_2 = deler_2[4]  # Corrected here
-            sauda_data.append((tid_2, temperatur_2, lufttrykk_2))
+        deler = line.replace(',', '.').strip().split(';')
+        if len(deler) > 4:
+            sauda_data.append((deler[2], float(deler[3])))
 
-# Debugging the data
-if not sinnes_data:
-    print("No data in Sinnes dataset.")
-if not sauda_data:
-    print("No data in Sauda dataset.")
-
-# Print first few entries for both datasets to debug
-print("Parsed Sinnes data:", sinnes_data[:5])
-print("Parsed Sauda data:", sauda_data[:5])
-
-# Function to convert time
 def konverter_tid(data):
-    converted = []
-    for tid, _, _ in data:
-        try:
-            converted.append(datetime.strptime(tid, '%d.%m.%Y %H:%M'))
-        except ValueError as e:
-            print(f"Error converting time {tid}: {e}")
-    return converted
+    return [datetime.strptime(tid, '%d.%m.%Y %H:%M') for tid, _ in data]
 
-# Converting times
-x_sinnes = konverter_tid(sinnes_data)
-y_sinnes = [float(temp) for _, temp, _ in sinnes_data]  # Convert to float for accurate plotting
+x_sinnes, y_sinnes = konverter_tid(sinnes_data), [temp for _, temp in sinnes_data]
+x_sauda, y_sauda = konverter_tid(sauda_data), [temp for _, temp in sauda_data]
 
-x_sauda = konverter_tid(sauda_data)
-y_sauda = [float(temp) for _, temp, _ in sauda_data]  # Convert to float for accurate plotting
-
-# Plotting the data
 plt.figure(figsize=(10, 6))
-
-# Plot Sinnes and Sauda temperatures
 plt.plot(x_sinnes, y_sinnes, label='Sinnes', color='blue')
 plt.plot(x_sauda, y_sauda, label='Sauda', color='green')
-
-# Adding labels and title
 plt.xlabel('Tid')
 plt.ylabel('Lufttemperatur (°C)')
 plt.title('Lufttemperatur fra Sinnes og Sauda')
-
-# Adding legend
 plt.legend()
-
-# Rotate x-axis labels for better readability
 plt.xticks(rotation=45)
-
-# Adjust the x-axis limits based on the data range
-if x_sinnes and x_sauda:  # Only adjust if lists are not empty
-    plt.xlim([min(x_sinnes + x_sauda), max(x_sinnes + x_sauda)])
-
-# Layout adjustment for better spacing
 plt.tight_layout()
-
-# Display the plot
 plt.show()
