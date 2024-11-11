@@ -1,4 +1,3 @@
-
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import numpy as np
@@ -21,8 +20,9 @@ def moving_average(data, n):
     return np.convolve(data, np.ones((n,))/n, mode='valid')
 
 # Les trykk og temperaturdata fra den første filen
+fil = 'C:/Users/Bruker/Downloads/datafiler/trykk_og_temperaturlogg_rune_time.csv.txt'
 tid_i_sekunder, trykk, absolutt_trykk, temperatur = [], [], [], []
-with open('trykk_og_temperaturlogg_rune_time.csv.txt', 'r') as fila:
+with open(fil, 'r') as fila:
     for line in fila:
         line = line.replace(',', '.')
         deler = line.strip().split(';')
@@ -36,49 +36,55 @@ with open('trykk_og_temperaturlogg_rune_time.csv.txt', 'r') as fila:
                 continue
 
 # Les data fra de andre værstasjoner
+fil2 = 'C:/Users/Bruker/Downloads/temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt'
+
 # Sirdal
-def les_data():
-    tid, temperatur, trykk = [], [], []
-    with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
+def les_data_sirdal(filnavn):
+    tid, temperatur_sirdal, trykk = [], [], []
+    with open(filnavn, 'r') as fila:
         for line in fila.readlines()[1:]:
             line = line.replace(',', '.').strip().split(';')
             if len(line) >= 5 and line[0] == "Sirdal - Sinnes":
                 try:
                     tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
-                    temperatur.append(float(line[3]))
+                    temperatur_sirdal.append(float(line[3]))
                     trykk.append(float(line[4]))
                 except ValueError:
                     continue
-    return tid, temperatur, trykk
+    return tid, temperatur_sirdal, trykk
 
 # Sauda
-def les_data():
-    tid, temperatur, trykk = [], [], []
-    with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
+def les_data_sauda(filnavn):
+    tid, temperatur_sauda, trykk = [], [], []
+    with open(filnavn, 'r') as fila:
         for line in fila.readlines()[1:]:
             line = line.replace(',', '.').strip().split(';')
             if len(line) >= 5 and line[0] == "Sauda":
                 try:
                     tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
-                    temperatur.append(float(line[3]))
+                    temperatur_sauda.append(float(line[3]))
                     trykk.append(float(line[4]))
                 except ValueError:
                     continue
-    return tid, temperatur, trykk
+    return tid, temperatur_sauda, trykk
 
-# Beregn tid i datetime-format for første fil
-start_tid = datetime(2021, 6, 11, 14, 23)
+# Adjust the start time to 06.10.2021
+start_tid = datetime(2021, 6, 10, 0, 0)
 tid_datetime = [start_tid + timedelta(seconds=t) for t in tid_i_sekunder]
 
 # Les data fra den andre filen
-dato_tid, temperatur2, trykk2 = les_data('temperatur_trykk_met_samme_rune_time_datasett.csv.txt')
+dato_tid, temperatur2, trykk2 = les_data('C:/Users/Bruker/Downloads/datafiler/temperatur_trykk_met_samme_rune_time_datasett.csv.txt')
+
+# Les data fra Sirdal og Sauda
+tid_sirdal, temperatur_sirdal, trykk_sirdal = les_data_sirdal(fil2)
+tid_sauda, temperatur_sauda, trykk_sauda = les_data_sauda(fil2)
 
 # Beregn gjennomsnittstemperatur
 gjennomsnittstemperatur = moving_average(temperatur, 30)
 
-# Definer start- og sluttidspunkt for temperaturfallet
-start_fall_tid = datetime(2021, 6, 11, 17, 31)
-slutt_fall_tid = datetime(2021, 6, 12, 3, 5)
+# Definer start- og sluttidspunkt for temperaturfallet within the new range
+start_fall_tid = datetime(2021, 6, 10, 0, 0)
+slutt_fall_tid = datetime(2021, 6, 13, 23, 59)
 
 # Finn indeksene for start- og sluttidspunkt i begge datasettene
 start_index1 = tid_datetime.index(min(tid_datetime, key=lambda d: abs(d - start_fall_tid)))
@@ -89,6 +95,8 @@ slutt_index2 = dato_tid.index(min(dato_tid, key=lambda d: abs(d - slutt_fall_tid
 # Opprett linjer som interpolerer mellom temperaturen på de to tidspunktene i begge datasettene
 linje_tid1 = [tid_datetime[start_index1], tid_datetime[slutt_index1]]
 linje_temp1 = [temperatur[start_index1], temperatur[slutt_index1]]
+linje_temp_sirdal = [temperatur_sirdal[start_index1], temperatur_sirdal[slutt_index1]]
+linje_temp_sauda = [temperatur_sauda[start_index1], temperatur_sauda[slutt_index1]]
 linje_tid2 = [dato_tid[start_index2], dato_tid[slutt_index2]]
 linje_temp2 = [temperatur2[start_index2], temperatur2[slutt_index2]]
 
@@ -117,13 +125,28 @@ plt.ylabel("Temperatur (°C)")
 plt.grid(True)
 plt.legend()
 
-# Tempuratur Sirdal
+# Temperatur Sirdal
+plt.subplot(4, 1, 2)
+plt.plot(tid_sirdal, temperatur_sirdal, label="Temperatur (°C) fra Sirdal", color='blue')
+plt.plot(linje_tid1, linje_temp_sirdal, label="Temperaturfall (Sirdal)", color='red', linestyle='--')
+plt.title("Temperatur over Tid (Sirdal)")
+plt.xlabel("Tid")
+plt.ylabel("Temperatur (°C)")
+plt.grid(True)
+plt.legend()
 
-# Tempuratur Sauda
-
+# Temperatur Sauda
+plt.subplot(4, 1, 3)
+plt.plot(tid_sauda, temperatur_sauda, label="Temperatur (°C) fra Sauda", color='blue')
+plt.plot(linje_tid1, linje_temp_sauda, label="Temperaturfall (Sauda)", color='red', linestyle='--')
+plt.title("Temperatur over Tid (Sauda)")
+plt.xlabel("Tid")
+plt.ylabel("Temperatur (°C)")
+plt.grid(True)
+plt.legend()
 
 # Trykk plot
-plt.subplot(4, 1, 2)
+plt.subplot(4, 1, 4)
 plt.plot(tid_datetime, trykk, label="Trykk (hPa) fra Fil 1", color='orange')
 plt.plot(tid_datetime, absolutt_trykk, label="Absolutt Trykk (hPa)", color='blue')
 plt.plot(dato_tid, trykk2, label="Lufttrykk (hPa) fra Fil 2", color='green')
@@ -133,81 +156,5 @@ plt.ylabel("Trykk (hPa)")
 plt.grid(True)
 plt.legend()
 
-# Histogram plot
-plt.subplot(4, 1, 3)
-bins = np.arange(min(min(temperatur), min(temperatur2)), max(max(temperatur), max(temperatur2)) + 1, 1)
-plt.hist(temperatur, bins=bins, alpha=0.5, label="Temperatur fra Fil 1", color='blue', edgecolor='black')
-plt.hist(temperatur2, bins=bins, alpha=0.5, label="Temperatur fra Fil 2", color='green', edgecolor='black')
-plt.title("Histogram over Temperaturer")
-plt.xlabel("Temperatur (°C)")
-plt.ylabel("Antall målinger")
-plt.legend()
-
-# Trykkdifferanse plot
-plt.subplot(4, 1, 4)
-plt.plot(tid_for_trykkdifferanse, gjennomsnitt_trykkdifferanse, label="Gjennomsnittlig Trykkdifferanse", color='purple')
-plt.title("Trykkdifferanse (Absolutt Trykk - Barometrisk Trykk)")
-plt.xlabel("Tid")
-plt.ylabel("Trykkdifferanse (hPa)")
-plt.grid(True)
-plt.legend()
-
 plt.tight_layout()
 plt.show()
-
-
-
-# Funksjon for å finne tidspunktene som har samme dag og time i begge datasett
-def match_times(tid1, tid2):
-    matched_indices = []
-    for t1 in tid1:
-        # Hente dato og time (uten minutter og sekunder)
-        tid1_justert = t1.replace(minute=0, second=0, microsecond=0)
-        
-        # Finn nærmeste tid i tid2
-        closest_time = min(tid2, key=lambda t2: abs(t2 - tid1_justert))
-        tid2_justert = closest_time.replace(minute=0, second=0, microsecond=0)
-        
-        # Hvis de justerte tidene stemmer overens, legg til indekset
-        if tid1_justert == tid2_justert:
-            matched_indices.append((tid1.index(t1), tid2.index(closest_time)))
-    
-    return matched_indices
-
-# Finn matchende tidspunkter
-matched_indices = match_times(tid_datetime, dato_tid)
-
-# Beregn temperatur- og trykkforskjellen for matchende tidspunkter
-temperatur_diff = []
-trykk_diff = []
-for idx1, idx2 in matched_indices:
-    temp_diff = abs(temperatur[idx1] - temperatur2[idx2])  # Temperaturforskjell
-    press_diff = abs(trykk[idx1] - trykk2[idx2])  # Trykkforskjell
-    temperatur_diff.append(temp_diff)
-    trykk_diff.append(press_diff)
-
-# Finn minimum og maksimum forskjell
-min_temp_diff_idx = np.argmin(temperatur_diff)
-max_temp_diff_idx = np.argmax(temperatur_diff)
-min_press_diff_idx = np.argmin(trykk_diff)
-max_press_diff_idx = np.argmax(trykk_diff)
-
-# Tidspunktene der forskjellen er minst og størst
-min_temp_diff_time = tid_datetime[matched_indices[min_temp_diff_idx][0]]
-max_temp_diff_time = tid_datetime[matched_indices[max_temp_diff_idx][0]]
-min_press_diff_time = tid_datetime[matched_indices[min_press_diff_idx][0]]
-max_press_diff_time = tid_datetime[matched_indices[max_press_diff_idx][0]]
-
-# Beregn gjennomsnittlig forskjell
-average_temp_diff = np.mean(temperatur_diff)
-average_press_diff = np.mean(trykk_diff)
-
-# Print resultatene
-print(f"Minimum temperaturforskjell: {temperatur_diff[min_temp_diff_idx]} °C ved tid {min_temp_diff_time}")
-print(f"Maximum temperaturforskjell: {temperatur_diff[max_temp_diff_idx]} °C ved tid {max_temp_diff_time}")
-print(f"Minimum trykkforskjell: {trykk_diff[min_press_diff_idx]} hPa ved tid {min_press_diff_time}")
-print(f"Maximum trykkforskjell: {trykk_diff[max_press_diff_idx]} hPa ved tid {max_press_diff_time}")
-print(f"Gjennomsnittlig temperaturforskjell: {average_temp_diff} °C")
-print(f"Gjennomsnittlig trykkforskjell: {average_press_diff} hPa")
-
-
