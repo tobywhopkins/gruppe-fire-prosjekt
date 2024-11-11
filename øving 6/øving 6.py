@@ -37,32 +37,34 @@ with open('trykk_og_temperaturlogg_rune_time.csv.txt', 'r') as fila:
 
 # Les data fra de andre værstasjoner
 # Sirdal
-with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
-    for line in fila:
-        line = line.replace(',', '.')
-        deler = line.strip().split(';')
-        if len(deler) >= 5 and all(deler[1:5]) and deler[0] == "Sirdal":
-            try:
-                tid_i_sekunder.append(float(deler[1]))
-                trykk.append(float(deler[2]) * 10)
-                absolutt_trykk.append(float(deler[3]) * 10)
-                temperatur.append(float(deler[4]))
-            except ValueError:
-                continue
+def les_data(filnavn):
+    tid, temperatur, trykk = [], [], []
+    with open(filnavn, 'r') as fila:
+        for line in fila.readlines()[1:]:
+            line = line.replace(',', '.').strip().split(';')
+            if len(line) >= 5 and deler[0] == "Sirdal - Sinnes":
+                try:
+                    tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
+                    temperatur.append(float(line[3]))
+                    trykk.append(float(line[4]))
+                except ValueError:
+                    continue
+    return tid, temperatur, trykk
 
 # Sauda
-with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
-    for line in fila:
-        line = line.replace(',', '.')
-        deler = line.strip().split(';')
-        if len(deler) >= 5 and all(deler[1:5]) and deler[0] == "Sauda":
-            try:
-                tid_i_sekunder.append(float(deler[1]))
-                trykk.append(float(deler[2]) * 10)
-                absolutt_trykk.append(float(deler[3]) * 10)
-                temperatur.append(float(deler[4]))
-            except ValueError:
-                continue
+def les_data(filnavn):
+    tid, temperatur, trykk = [], [], []
+    with open(filnavn, 'r') as fila:
+        for line in fila.readlines()[1:]:
+            line = line.replace(',', '.').strip().split(';')
+            if len(line) >= 5 and deler[0] == "Sauda":
+                try:
+                    tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
+                    temperatur.append(float(line[3]))
+                    trykk.append(float(line[4]))
+                except ValueError:
+                    continue
+    return tid, temperatur, trykk
 
 # Beregn tid i datetime-format for første fil
 start_tid = datetime(2021, 6, 11, 14, 23)
@@ -114,6 +116,11 @@ plt.xlabel("Tid")
 plt.ylabel("Temperatur (°C)")
 plt.grid(True)
 plt.legend()
+
+# Tempuratur Sirdal
+
+# Tempuratur Sauda
+
 
 # Trykk plot
 plt.subplot(4, 1, 2)
