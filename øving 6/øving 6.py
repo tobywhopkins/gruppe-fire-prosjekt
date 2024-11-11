@@ -37,9 +37,9 @@ with open('trykk_og_temperaturlogg_rune_time.csv.txt', 'r') as fila:
 
 # Les data fra de andre værstasjoner
 # Sirdal
-def les_data(filnavn):
+def les_data():
     tid, temperatur, trykk = [], [], []
-    with open(filnavn, 'r') as fila:
+    with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
         for line in fila.readlines()[1:]:
             line = line.replace(',', '.').strip().split(';')
             if len(line) >= 5 and deler[0] == "Sirdal - Sinnes":
@@ -52,9 +52,9 @@ def les_data(filnavn):
     return tid, temperatur, trykk
 
 # Sauda
-def les_data(filnavn):
+def les_data():
     tid, temperatur, trykk = [], [], []
-    with open(filnavn, 'r') as fila:
+    with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
         for line in fila.readlines()[1:]:
             line = line.replace(',', '.').strip().split(';')
             if len(line) >= 5 and deler[0] == "Sauda":
