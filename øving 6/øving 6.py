@@ -42,7 +42,7 @@ def les_data():
     with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
         for line in fila.readlines()[1:]:
             line = line.replace(',', '.').strip().split(';')
-            if len(line) >= 5 and deler[0] == "Sirdal - Sinnes":
+            if len(line) >= 5 and line[0] == "Sirdal - Sinnes":
                 try:
                     tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
                     temperatur.append(float(line[3]))
@@ -57,7 +57,7 @@ def les_data():
     with open('temperatur_trykk_sauda_sinnes_samme_tidsperiode.csv.txt', 'r') as fila:
         for line in fila.readlines()[1:]:
             line = line.replace(',', '.').strip().split(';')
-            if len(line) >= 5 and deler[0] == "Sauda":
+            if len(line) >= 5 and line[0] == "Sauda":
                 try:
                     tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
                     temperatur.append(float(line[3]))
