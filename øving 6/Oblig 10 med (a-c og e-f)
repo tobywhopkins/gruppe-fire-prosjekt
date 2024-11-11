@@ -1,0 +1,138 @@
+import matplotlib.pyplot as plt
+from datetime import datetime, timedelta
+import numpy as np
+
+# Funksjon for å lese data fra fil
+def les_data(filnavn):
+    tid, temperatur, trykk = [], [], []
+    with open(filnavn, 'r') as fila:
+        for line in fila.readlines()[1:]:
+            line = line.replace(',', '.').strip().split(';')
+            if len(line) >= 5:
+                try:
+                    tid.append(datetime.strptime(line[2], '%d.%m.%Y %H:%M'))
+                    temperatur.append(float(line[3]))
+                    trykk.append(float(line[4]))
+                except ValueError:
+                    continue
+    return tid, temperatur, trykk
+
+# Funksjon for å beregne glidende gjennomsnitt
+def moving_average(data, n):
+    return np.convolve(data, np.ones((n,))/n, mode='valid')
+
+# Funksjon for å beregne standardavvik
+def standardavvik(data, n):
+    gjennomsnitt = moving_average(data, n)
+    std_avvik = [
+        np.sqrt(np.sum((data[i:i+n] - gjennomsnitt[j])**2) / (n - 1))
+        for j, i in enumerate(range(len(data) - n + 1))
+    ]
+    return std_avvik
+
+# Les trykk og temperaturdata fra den første filen
+tid_i_sekunder, trykk, absolutt_trykk, temperatur = [], [], [], []
+with open('trykk_og_temperaturlogg_rune_time.csv.txt', 'r') as fila:
+    for line in fila:
+        line = line.replace(',', '.')
+        deler = line.strip().split(';')
+        if len(deler) >= 5 and all(deler[1:5]):
+            try:
+                tid_i_sekunder.append(float(deler[1]))
+                trykk.append(float(deler[2]) * 10)
+                absolutt_trykk.append(float(deler[3]) * 10)
+                temperatur.append(float(deler[4]))
+            except ValueError:
+                continue
+
+# Beregn tid i datetime-format for første fil
+start_tid = datetime(2021, 6, 11, 14, 23)
+tid_datetime = [start_tid + timedelta(seconds=t) for t in tid_i_sekunder]
+
+# Les data fra den andre filen
+dato_tid, temperatur2, trykk2 = les_data('temperatur_trykk_met_samme_rune_time_datasett.csv.txt')
+
+# Beregn gjennomsnittstemperatur og standardavvik
+gjennomsnittstemperatur = moving_average(temperatur, 30)
+std_avvik_temperatur = standardavvik(temperatur, 30)
+
+# Juster tid slik at lengden på tid, gjennomsnittstemperatur og std_avvik_temperatur er lik
+plot_tid = tid_datetime[29:]  # Begynner fra den 30. målingen på grunn av glidende gjennomsnitt og standardavvik
+
+# Definer start- og sluttidspunkt for temperaturfallet
+start_fall_tid = datetime(2021, 6, 11, 17, 31)
+slutt_fall_tid = datetime(2021, 6, 12, 3, 5)
+
+# Finn indeksene for start- og sluttidspunkt i begge datasettene
+start_index1 = tid_datetime.index(min(tid_datetime, key=lambda d: abs(d - start_fall_tid)))
+slutt_index1 = tid_datetime.index(min(tid_datetime, key=lambda d: abs(d - slutt_fall_tid)))
+start_index2 = dato_tid.index(min(dato_tid, key=lambda d: abs(d - start_fall_tid)))
+slutt_index2 = dato_tid.index(min(dato_tid, key=lambda d: abs(d - slutt_fall_tid)))
+
+# Opprett linjer som interpolerer mellom temperaturen på de to tidspunktene i begge datasettene
+linje_tid1 = [tid_datetime[start_index1], tid_datetime[slutt_index1]]
+linje_temp1 = [temperatur[start_index1], temperatur[slutt_index1]]
+linje_tid2 = [dato_tid[start_index2], dato_tid[slutt_index2]]
+linje_temp2 = [temperatur2[start_index2], temperatur2[slutt_index2]]
+
+# Beregn differansen mellom absolutt trykk og barometrisk trykk
+trykkdifferanse = [barometrisk - absolutt for absolutt, barometrisk in zip(absolutt_trykk, trykk)]
+
+# Beregn glidende gjennomsnitt for trykkdifferansen (10 forrige og 10 neste)
+gjennomsnitt_trykkdifferanse = moving_average(trykkdifferanse, 21)  # 10 forrige og 10 neste, derfor 21 totalt
+
+# Juster tid slik at lengden på tid og gjennomsnitt_trykkdifferanse er lik
+tid_for_trykkdifferanse = tid_datetime[10:-10]  # Fjern de første og siste 10 elementene for å matche glidende gjennomsnitt
+
+# Plotting
+plt.figure(figsize=(12, 10))
+
+# Temperatur plot med gjennomsnitt og standardavvik feilstolper
+plt.subplot(4, 1, 1)
+plt.errorbar(
+    plot_tid, gjennomsnittstemperatur, yerr=std_avvik_temperatur,
+    errorevery=30, capsize=5, label="Gjennomsnittstemperatur med feilstolper (standardavvik)",
+    color='orange', ecolor='gray'
+)
+plt.plot(tid_datetime, temperatur, label="Temperatur (°C) fra Fil 1", color='blue')
+plt.plot(dato_tid, temperatur2, label="Temperatur (°C) fra Fil 2", color='green')
+plt.plot(linje_tid1, linje_temp1, label="Temperaturfall (Fil 1)", color='red', linestyle='--')
+plt.plot(linje_tid2, linje_temp2, label="Temperaturfall (Fil 2)", color='purple', linestyle='--')
+plt.title("Temperatur over Tid med Standardavvik Feilstolper")
+plt.xlabel("Tid")
+plt.ylabel("Temperatur (°C)")
+plt.grid(True)
+plt.legend()
+
+# Trykk plot
+plt.subplot(4, 1, 2)
+plt.plot(tid_datetime, trykk, label="Trykk (hPa) fra Fil 1", color='orange')
+plt.plot(tid_datetime, absolutt_trykk, label="Absolutt Trykk (hPa)", color='blue')
+plt.plot(dato_tid, trykk2, label="Lufttrykk (hPa) fra Fil 2", color='green')
+plt.title("Trykk over Tid")
+plt.xlabel("Tid")
+plt.ylabel("Trykk (hPa)")
+plt.grid(True)
+plt.legend()
+
+# Histogram plot
+plt.subplot(4, 1, 3)
+bins = np.arange(min(min(temperatur), min(temperatur2)), max(max(temperatur), max(temperatur2)) + 1, 1)
+plt.hist(temperatur, bins=bins, alpha=0.5, label="Temperatur fra Fil 1", color='blue', edgecolor='black')
+plt.hist(temperatur2, bins=bins, alpha=0.5, label="Temperatur fra Fil 2", color='green', edgecolor='black')
+plt.title("Histogram over Temperaturer")
+plt.xlabel("Temperatur (°C)")
+plt.ylabel("Antall målinger")
+plt.legend()
+
+# Trykkdifferanse plot
+plt.subplot(4, 1, 4)
+plt.plot(tid_for_trykkdifferanse, gjennomsnitt_trykkdifferanse, label="Gjennomsnittlig Trykkdifferanse", color='purple')
+plt.title("Trykkdifferanse (Absolutt Trykk - Barometrisk Trykk)")
+plt.xlabel("Tid")
+plt.ylabel("Trykkdifferanse (hPa)")
+plt.grid(True)
+plt.legend()
+
+plt.tight_layout()
+plt.show()
